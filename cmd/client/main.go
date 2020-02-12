@@ -1,0 +1,179 @@
+// Create binary rpm package with ease
+package main
+
+import (
+	"fmt"
+	"github.com/greenpau/go-rpm-build-lib/pkg/rpmbuilder"
+	"github.com/urfave/cli"
+	"os"
+	"path/filepath"
+)
+
+var (
+	appName        = "go-rpm-builder"
+	appVersion     = "[untracked]"
+	appDocs        = "https://github.com/greenpau/go-rpm-build-lib/"
+	appDescription = "RPM utilities in Go"
+	gitBranch      string
+	gitCommit      string
+	buildUser      string // whoami
+	buildDate      string // date -u
+)
+
+func main() {
+	app := cli.NewApp()
+	app.Name = appName
+	app.Version = appVersion
+	app.Usage = "RPM utilities in Go"
+	app.UsageText = fmt.Sprintf("%s <cmd> <options>", appName)
+	app.Commands = []*cli.Command{
+		{
+			Name:   "generate-spec",
+			Usage:  "Generate the SPEC file",
+			Action: generateSpec,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "file, f",
+					Value: "rpm_config.json",
+					Usage: "Path to the rpm_config.json file",
+				},
+				&cli.StringFlag{
+					Name:  "a, arch",
+					Value: "",
+					Usage: "Target architecture of the build",
+				},
+				&cli.StringFlag{
+					Name:  "version",
+					Value: "",
+					Usage: "Target version of the build",
+				},
+			},
+		},
+		{
+			Name:   "generate",
+			Usage:  "Generate the package",
+			Action: generatePkg,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "file, f",
+					Value: "rpm_config.json",
+					Usage: "Path to the rpm_config.json file",
+				},
+				&cli.StringFlag{
+					Name:  "b, build-area",
+					Value: "pkg-build",
+					Usage: "Path to the build area",
+				},
+				&cli.StringFlag{
+					Name:  "a, arch",
+					Value: "",
+					Usage: "Target architecture of the build",
+				},
+				&cli.StringFlag{
+					Name:  "o, output",
+					Value: "",
+					Usage: "File path to the resulting rpm file",
+				},
+				&cli.StringFlag{
+					Name:  "version",
+					Value: "",
+					Usage: "Target version of the build",
+				},
+			},
+		},
+		{
+			Name:   "test",
+			Usage:  "Test the package json file",
+			Action: testPkg,
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  "file, f",
+					Value: "rpm_config.json",
+					Usage: "Path to the rpm_config.json file",
+				},
+			},
+		},
+	}
+
+	app.Run(os.Args)
+}
+
+func generateSpec(c *cli.Context) error {
+	file := c.String("file")
+	arch := c.String("arch")
+	version := c.String("version")
+
+	rpmJSON := rpmbuilder.Package{}
+
+	if err := rpmJSON.Load(file); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	if err := rpmJSON.Normalize(arch, version); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	spec, err := rpmJSON.GenerateSpecFile("")
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+	fmt.Printf("%s", spec)
+
+	return nil
+}
+
+func generatePkg(c *cli.Context) error {
+	var err error
+
+	file := c.String("file")
+	arch := c.String("arch")
+	version := c.String("version")
+	buildArea := c.String("build-area")
+	output := c.String("output")
+
+	if output == "" {
+		return cli.NewExitError("--output,-o argument is required", 1)
+	}
+
+	rpmJSON := rpmbuilder.Package{}
+
+	if err3 := rpmJSON.Load(file); err3 != nil {
+		return cli.NewExitError(err3.Error(), 1)
+	}
+
+	if buildArea, err = filepath.Abs(buildArea); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	if err2 := rpmJSON.Normalize(arch, version); err2 != nil {
+		return cli.NewExitError(err2.Error(), 1)
+	}
+
+	rpmJSON.InitializeBuildArea(buildArea)
+
+	if err = rpmJSON.WriteSpecFile("", buildArea); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	if err = rpmJSON.RunBuild(buildArea, output); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	fmt.Println("\n\nAll done!")
+
+	return nil
+}
+
+func testPkg(c *cli.Context) error {
+	file := c.String("file")
+
+	rpmJSON := rpmbuilder.Package{}
+
+	if err := rpmJSON.Load(file); err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	fmt.Println("File is correct")
+
+	return nil
+}
