@@ -87,14 +87,16 @@ func (p *Package) Load(file string) error {
 }
 
 // Normalize build information
-func (p *Package) Normalize(arch string, version string) error {
+func (p *Package) Normalize(arch string, version string, release string) error {
 
 	tokens := make(map[string]string)
 	tokens["!version!"] = version
+	tokens["!release!"] = release
 	tokens["!arch!"] = arch
 	tokens["!name!"] = p.Name
 
 	p.Version = replaceTokens(p.Version, tokens)
+	p.Release = replaceTokens(p.Release, tokens)
 	p.Arch = replaceTokens(p.Arch, tokens)
 	p.URL = replaceTokens(p.URL, tokens)
 	p.Summary = replaceTokens(p.Summary, tokens)
