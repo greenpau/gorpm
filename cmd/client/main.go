@@ -3,10 +3,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/greenpau/go-rpm-build-lib/pkg/rpmbuilder"
+	rpmbuilder "github.com/greenpau/go-rpm-build-lib/pkg/rpmbuilder"
 	"github.com/urfave/cli"
+	"log"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
 )
 
 var (
@@ -22,10 +25,10 @@ var (
 
 func main() {
 	app := cli.NewApp()
-	app.Name = appName
-	app.Version = appVersion
+	app.Name = GetAppName()
+	app.Version = GetVersion()
 	app.Usage = "RPM utilities in Go"
-	app.UsageText = fmt.Sprintf("%s <cmd> <options>", appName)
+	app.UsageText = fmt.Sprintf("%s <cmd> <options>", GetAppName())
 	app.Commands = []*cli.Command{
 		{
 			Name:   "generate-spec",
@@ -38,14 +41,19 @@ func main() {
 					Usage: "Path to the rpm_config.json file",
 				},
 				&cli.StringFlag{
-					Name:  "a, arch",
+					Name:  "arch, a",
 					Value: "",
-					Usage: "Target architecture of the build",
+					Usage: "Target architecture of the build, e.g. amd64",
 				},
 				&cli.StringFlag{
 					Name:  "version",
 					Value: "",
 					Usage: "Target version of the build",
+				},
+				&cli.StringFlag{
+					Name:  "release",
+					Value: "",
+					Usage: "Target release of the build",
 				},
 			},
 		},
@@ -60,17 +68,17 @@ func main() {
 					Usage: "Path to the rpm_config.json file",
 				},
 				&cli.StringFlag{
-					Name:  "b, build-area",
+					Name:  "build-area, b",
 					Value: "pkg-build",
 					Usage: "Path to the build area",
 				},
 				&cli.StringFlag{
-					Name:  "a, arch",
+					Name:  "arch, a",
 					Value: "",
 					Usage: "Target architecture of the build",
 				},
 				&cli.StringFlag{
-					Name:  "o, output",
+					Name:  "output, o",
 					Value: "",
 					Usage: "File path to the resulting rpm file",
 				},
@@ -78,6 +86,11 @@ func main() {
 					Name:  "version",
 					Value: "",
 					Usage: "Target version of the build",
+				},
+				&cli.StringFlag{
+					Name:  "release",
+					Value: "",
+					Usage: "Target release of the build",
 				},
 			},
 		},
@@ -95,13 +108,58 @@ func main() {
 		},
 	}
 
-	app.Run(os.Args)
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+// GetAppName returns application name
+func GetAppName() string {
+	return appName
+}
+
+// ShortVersion returns short version information
+func GetShortVersion() string {
+	var sb strings.Builder
+	sb.WriteString(appName)
+	if appVersion != "" {
+		sb.WriteString("-" + appVersion)
+	}
+	sb.WriteString(fmt.Sprintf(", %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH))
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+// GetVersion returns version information
+func GetVersion() string {
+	var sb strings.Builder
+	sb.WriteString(appName)
+	if appVersion != "" {
+		sb.WriteString("-" + appVersion)
+	}
+	sb.WriteString(fmt.Sprintf(", %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH))
+	if gitCommit != "" {
+		sb.WriteString(", commit: " + gitCommit)
+	}
+	if gitBranch != "" {
+		sb.WriteString(", branch: " + gitBranch)
+	}
+	if buildDate != "" {
+		sb.WriteString(", build on " + buildDate)
+		if buildUser != "" {
+			sb.WriteString(" by " + buildUser)
+		}
+	}
+	sb.WriteString("\n")
+	return sb.String()
 }
 
 func generateSpec(c *cli.Context) error {
 	file := c.String("file")
 	arch := c.String("arch")
 	version := c.String("version")
+	release := c.String("release")
 
 	rpmJSON := rpmbuilder.Package{}
 
@@ -109,7 +167,7 @@ func generateSpec(c *cli.Context) error {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	if err := rpmJSON.Normalize(arch, version); err != nil {
+	if err := rpmJSON.Normalize(arch, version, release); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
@@ -127,6 +185,7 @@ func generatePkg(c *cli.Context) error {
 
 	file := c.String("file")
 	arch := c.String("arch")
+	release := c.String("release")
 	version := c.String("version")
 	buildArea := c.String("build-area")
 	output := c.String("output")
@@ -137,16 +196,16 @@ func generatePkg(c *cli.Context) error {
 
 	rpmJSON := rpmbuilder.Package{}
 
-	if err3 := rpmJSON.Load(file); err3 != nil {
-		return cli.NewExitError(err3.Error(), 1)
+	if err = rpmJSON.Load(file); err != nil {
+		return cli.NewExitError(err.Error(), 1)
 	}
 
 	if buildArea, err = filepath.Abs(buildArea); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	if err2 := rpmJSON.Normalize(arch, version); err2 != nil {
-		return cli.NewExitError(err2.Error(), 1)
+	if err = rpmJSON.Normalize(arch, version, release); err != nil {
+		return cli.NewExitError(err.Error(), 1)
 	}
 
 	rpmJSON.InitializeBuildArea(buildArea)
