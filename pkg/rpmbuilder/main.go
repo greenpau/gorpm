@@ -170,6 +170,9 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	}
 
 	if len(p.Envs) > 0 {
+		for k, v := range p.Envs {
+			p.Envs[k] = replaceTokens(v, tokens)
+		}
 		envFile, err := p.WriteEnvFile()
 		if err != nil {
 			return errors.WithStack(err)
@@ -302,16 +305,16 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 		spec += fmt.Sprintf("Summary: %s\n", p.Summary)
 	}
 	if len(p.BuildRequires) > 0 {
-		spec += fmt.Sprintf("\nBuildRequires:%s\n", strings.Join(p.BuildRequires, ", "))
+		spec += fmt.Sprintf("\nBuildRequires: %s\n", strings.Join(p.BuildRequires, ", "))
 	}
 	if len(p.Requires) > 0 {
-		spec += fmt.Sprintf("\nRequires:%s\n", strings.Join(p.Requires, ", "))
+		spec += fmt.Sprintf("\nRequires: %s\n", strings.Join(p.Requires, ", "))
 	}
 	if len(p.Provides) > 0 {
-		spec += fmt.Sprintf("\nProvides:%s\n", strings.Join(p.Provides, ", "))
+		spec += fmt.Sprintf("\nProvides: %s\n", strings.Join(p.Provides, ", "))
 	}
 	if len(p.Conflicts) > 0 {
-		spec += fmt.Sprintf("\nConflicts:%s\n", strings.Join(p.Conflicts, ", "))
+		spec += fmt.Sprintf("\nConflicts: %s\n", strings.Join(p.Conflicts, ", "))
 	}
 	if p.Description != "" {
 		spec += fmt.Sprintf("\n%%description\n%s\n", p.Description)

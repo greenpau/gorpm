@@ -73,3 +73,6 @@ dep:
 	@#rm -rf $GOPATH/pkg/dep/sources/https---github.com-greenpau*
 	@dep version || go get -u github.com/golang/dep/cmd/dep
 	@dep ensure
+
+deploy:
+	@sudo cp bin/go-rpm-builder /usr/local/bin/go-rpm-builder
