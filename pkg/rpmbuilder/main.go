@@ -22,30 +22,31 @@ func init() {
 
 // Package contains the build information
 type Package struct {
-	Name          string            `json:"name"`
-	Version       string            `json:"version,omitempty"`
-	Arch          string            `json:"arch,omitempty"`
-	Release       string            `json:"release,omitempty"`
-	Group         string            `json:"group,omitempty"`
-	License       string            `json:"license,omitempty"`
-	URL           string            `json:"url,omitempty"`
-	Summary       string            `json:"summary,omitempty"`
-	Description   string            `json:"description,omitempty"`
-	ChangelogFile string            `json:"changelog-file,omitempty"`
-	ChangelogCmd  string            `json:"changelog-cmd,omitempty"`
-	Files         []fileInstruction `json:"files,omitempty"`
-	PreInst       string            `json:"preinst,omitempty"`
-	PostInst      string            `json:"postinst,omitempty"`
-	PreRm         string            `json:"prerm,omitempty"`
-	PostRm        string            `json:"postrm,omitempty"`
-	Verify        string            `json:"verify,omitempty"`
-	BuildRequires []string          `json:"build-requires,omitempty"`
-	Requires      []string          `json:"requires,omitempty"`
-	Provides      []string          `json:"provides,omitempty"`
-	Conflicts     []string          `json:"conflicts,omitempty"`
-	Envs          map[string]string `json:"envs,omitempty"`
-	Menus         []menu            `json:"menus"`
-	AutoReqProv   string            `json:"auto-req-prov,omitempty"`
+	Name                       string            `json:"name"`
+	Version                    string            `json:"version,omitempty"`
+	Arch                       string            `json:"arch,omitempty"`
+	Release                    string            `json:"release,omitempty"`
+	Group                      string            `json:"group,omitempty"`
+	License                    string            `json:"license,omitempty"`
+	URL                        string            `json:"url,omitempty"`
+	Summary                    string            `json:"summary,omitempty"`
+	Description                string            `json:"description,omitempty"`
+	ChangelogFile              string            `json:"changelog-file,omitempty"`
+	ChangelogCmd               string            `json:"changelog-cmd,omitempty"`
+	Files                      []fileInstruction `json:"files,omitempty"`
+	PreInstallScriptallScript  string            `json:"pre_install_script,omitempty"`
+	PostInstallScriptallScript string            `json:"post_install_script,omitempty"`
+	PreRemoveScript            string            `json:"pre_remove_script,omitempty"`
+	PostRemoveScript           string            `json:"post_remove_script,omitempty"`
+	VerifyScript               string            `json:"verify_script,omitempty"`
+	CleanupScript              string            `json:"cleanup_script,omitempty"`
+	BuildRequires              []string          `json:"build-requires,omitempty"`
+	Requires                   []string          `json:"requires,omitempty"`
+	Provides                   []string          `json:"provides,omitempty"`
+	Conflicts                  []string          `json:"conflicts,omitempty"`
+	Envs                       map[string]string `json:"envs,omitempty"`
+	Menus                      []menu            `json:"menus"`
+	AutoReqProv                string            `json:"auto-req-prov,omitempty"`
 }
 
 type fileInstruction struct {
@@ -334,6 +335,11 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 	}
 	spec += fmt.Sprintf("%s\n", files)
 	spec += fmt.Sprintf("\n%%clean\n")
+
+	if content := readFile(p.CleanupScript); content != "" {
+		spec += fmt.Sprintf("%s\n", content)
+	}
+
 	shortcutInstall := "\n"
 	for _, menu := range p.Menus {
 		shortcutInstall += fmt.Sprintf("desktop-file-install --vendor='' ")
@@ -342,21 +348,21 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 		shortcutInstall += "\n"
 	}
 	shortcutInstall = strings.TrimSpace(shortcutInstall)
-	if content := readFile(p.PreInst); content != "" {
+	if content := readFile(p.PreInstallScript); content != "" {
 		spec += fmt.Sprintf("\n%%pre\n%s\n", content)
 	}
-	if content := readFile(p.PostInst); content != "" {
+	if content := readFile(p.PostInstallScript); content != "" {
 		spec += fmt.Sprintf("\n%%post\n%s\n", content+shortcutInstall)
 	} else if shortcutInstall != "" {
 		spec += fmt.Sprintf("\n%%post\n%s\n", shortcutInstall)
 	}
-	if content := readFile(p.PreRm); content != "" {
+	if content := readFile(p.PreRemoveScript); content != "" {
 		spec += fmt.Sprintf("\n%%preun\n%s\n", content)
 	}
-	if content := readFile(p.PostRm); content != "" {
+	if content := readFile(p.PostRemoveScript); content != "" {
 		spec += fmt.Sprintf("\n%%postun\n%s\n", content)
 	}
-	if content := readFile(p.Verify); content != "" {
+	if content := readFile(p.VerifyScript); content != "" {
 		spec += fmt.Sprintf("\n%%verifyscript\n%s\n", content)
 	}
 	spec += fmt.Sprintf("\n%%changelog\n")
