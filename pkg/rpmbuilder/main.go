@@ -22,31 +22,32 @@ func init() {
 
 // Package contains the build information
 type Package struct {
-	Name                       string            `json:"name"`
-	Version                    string            `json:"version,omitempty"`
-	Arch                       string            `json:"arch,omitempty"`
-	Release                    string            `json:"release,omitempty"`
-	Group                      string            `json:"group,omitempty"`
-	License                    string            `json:"license,omitempty"`
-	URL                        string            `json:"url,omitempty"`
-	Summary                    string            `json:"summary,omitempty"`
-	Description                string            `json:"description,omitempty"`
-	ChangelogFile              string            `json:"changelog-file,omitempty"`
-	ChangelogCmd               string            `json:"changelog-cmd,omitempty"`
-	Files                      []fileInstruction `json:"files,omitempty"`
-	PreInstallScriptallScript  string            `json:"pre_install_script,omitempty"`
-	PostInstallScriptallScript string            `json:"post_install_script,omitempty"`
-	PreRemoveScript            string            `json:"pre_remove_script,omitempty"`
-	PostRemoveScript           string            `json:"post_remove_script,omitempty"`
-	VerifyScript               string            `json:"verify_script,omitempty"`
-	CleanupScript              string            `json:"cleanup_script,omitempty"`
-	BuildRequires              []string          `json:"build-requires,omitempty"`
-	Requires                   []string          `json:"requires,omitempty"`
-	Provides                   []string          `json:"provides,omitempty"`
-	Conflicts                  []string          `json:"conflicts,omitempty"`
-	Envs                       map[string]string `json:"envs,omitempty"`
-	Menus                      []menu            `json:"menus"`
-	AutoReqProv                string            `json:"auto-req-prov,omitempty"`
+	Name              string            `json:"name"`
+	Version           string            `json:"version,omitempty"`
+	Arch              string            `json:"arch,omitempty"`
+	Release           string            `json:"release,omitempty"`
+	Group             string            `json:"group,omitempty"`
+	License           string            `json:"license,omitempty"`
+	URL               string            `json:"url,omitempty"`
+	Summary           string            `json:"summary,omitempty"`
+	Description       string            `json:"description,omitempty"`
+	ChangelogFile     string            `json:"changelog-file,omitempty"`
+	ChangelogCmd      string            `json:"changelog-cmd,omitempty"`
+	Files             []fileInstruction `json:"files,omitempty"`
+	Sources           []string          `json:"sources,omitempty"`
+	PreInstallScript  string            `json:"pre_install_script,omitempty"`
+	PostInstallScript string            `json:"post_install_script,omitempty"`
+	PreRemoveScript   string            `json:"pre_remove_script,omitempty"`
+	PostRemoveScript  string            `json:"post_remove_script,omitempty"`
+	VerifyScript      string            `json:"verify_script,omitempty"`
+	CleanupScript     string            `json:"cleanup_script,omitempty"`
+	BuildRequires     []string          `json:"build-requires,omitempty"`
+	Requires          []string          `json:"requires,omitempty"`
+	Provides          []string          `json:"provides,omitempty"`
+	Conflicts         []string          `json:"conflicts,omitempty"`
+	Envs              map[string]string `json:"envs,omitempty"`
+	Menus             []menu            `json:"menus"`
+	AutoReqProv       string            `json:"auto-req-prov,omitempty"`
 }
 
 type fileInstruction struct {
@@ -167,6 +168,12 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	if len(p.Menus) > 0 {
 		if contains(p.BuildRequires, "desktop-file-utils") == false {
 			p.BuildRequires = append(p.BuildRequires, "desktop-file-utils")
+		}
+	}
+
+	if len(p.Sources) > 0 {
+		for i, v := range p.Sources {
+			p.Sources[i] = replaceTokens(v, tokens)
 		}
 	}
 
@@ -304,6 +311,13 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 	}
 	if p.Summary != "" {
 		spec += fmt.Sprintf("Summary: %s\n", p.Summary)
+	}
+	if len(p.Sources) > 0 {
+		spec += "\n"
+		for _, v := range p.Sources {
+			spec += fmt.Sprintf("Source0: %s\n", v)
+		}
+		spec += "\n"
 	}
 	if len(p.BuildRequires) > 0 {
 		spec += fmt.Sprintf("\nBuildRequires: %s\n", strings.Join(p.BuildRequires, ", "))
