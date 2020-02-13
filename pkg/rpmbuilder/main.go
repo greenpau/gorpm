@@ -170,6 +170,9 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	}
 
 	if len(p.Envs) > 0 {
+		for k, v := range p.Envs {
+			p.Envs[k] = replaceTokens(v, tokens)
+		}
 		envFile, err := p.WriteEnvFile()
 		if err != nil {
 			return errors.WithStack(err)
