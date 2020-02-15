@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/semver"
+	//"github.com/davecgh/go-spew/spew"
 	"github.com/mattn/go-zglob"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -51,10 +53,12 @@ type Package struct {
 }
 
 type fileInstruction struct {
-	From string `json:"from, omitempty"`
-	To   string `json:"to, omitempty"`
-	Base string `json:"base, omitempty"`
-	Type string `json:"type, omitempty"`
+	From        string `json:"from,omitempty"`
+	To          string `json:"to,omitempty"`
+	Base        string `json:"base,omitempty"`
+	Permissions string `json:"perms,omitempty"`
+	Owner       string `json:"owner,omitempty"`
+	Group       string `json:"group,omitempty"`
 }
 
 type menu struct {
@@ -189,6 +193,9 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 		sc.From = envFile
 		sc.To = fmt.Sprintf("%%{_sysconfdir}/profile.d/")
 		sc.Base = filepath.Dir(envFile)
+		sc.Owner = "root"
+		sc.Group = "root"
+		sc.Permissions = "644"
 		log.Infof("Added env File=%q\n", sc)
 		p.Files = append(p.Files, sc)
 	}
@@ -336,7 +343,10 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 	}
 	spec += fmt.Sprintf("\n%%prep\n")
 	spec += fmt.Sprintf("\n%%build\n")
+
+	log.Warnf("Reached install section")
 	spec += fmt.Sprintf("\n%%install\n")
+
 	install, err := p.GenerateInstallSection(sourceDir)
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -394,6 +404,9 @@ func (p *Package) GenerateInstallSection(sourceDir string) (string, error) {
 	var err error
 	content := ""
 
+	log.Warnf("Generating install section")
+	log.Warnf("Source directory: %s", sourceDir)
+
 	allDirs := make([]string, 0)
 	allFiles := make([]string, 0)
 
@@ -402,6 +415,8 @@ func (p *Package) GenerateInstallSection(sourceDir string) (string, error) {
 	}
 
 	for i, fileInst := range p.Files {
+
+		log.Warnf("Processing %v", fileInst)
 
 		if fileInst.From == "" {
 			log.Infof("Skipped p.Files[%d] %q", i, fileInst)
@@ -478,14 +493,10 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 		from := fileInst.From
 		to := fileInst.To
 		base := fileInst.Base
-		ftype := fileInst.Type
-
-		if ftype != "" {
-			ftype = " " + ftype
-		}
+		filePerms := fileInst.Permissions
 
 		if from == "" {
-			content += fmt.Sprintf("%s\n", ftype)
+			content += fmt.Sprintf(" %s\n", filePerms)
 			continue
 		}
 
@@ -499,7 +510,9 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 		log.Infof("fileInst.From=%q\n", from)
 		log.Infof("fileInst.To=%q\n", to)
 		log.Infof("fileInst.Base=%q\n", base)
-		log.Infof("fileInst.Type=%q\n", ftype)
+		log.Infof("fileInst.Permissions=%q\n", filePerms)
+		log.Infof("fileInst.Owner=%q\n", fileInst.Owner)
+		log.Infof("fileInst.Group=%q\n", fileInst.Group)
 
 		items, err := zglob.Glob(from)
 		if err != nil {
@@ -516,13 +529,20 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 			}
 			n = filepath.Join(to, n)
 			if fileItems(allItems).contains(n) == false {
-				allItems = append(allItems, fileItem{n, ftype})
+				allItems = append(allItems, fileItem{
+					n, filePerms,
+					fileInst.Owner,
+					fileInst.Group,
+				})
 			}
 		}
 	}
 
 	for _, item := range allItems {
-		content += fmt.Sprintf("%s%s\n", item.Type, item.Path)
+		content += "%"
+		content += fmt.Sprintf("attr(%s, %s, %s) %s\n",
+			item.Permissions, item.Owner, item.Group, item.Path,
+		)
 	}
 
 	log.Infof("content=\n%s\n", content)
@@ -651,29 +671,39 @@ func (p *Package) WriteEnvFile() (string, error) {
 
 	file := ""
 
-	tpmDir, err := ioutil.TempDir("", "rpm-envs")
+	user, err := user.Current()
 	if err != nil {
 		return file, errors.WithStack(err)
 	}
 
-	file = filepath.Join(tpmDir, p.Name+".sh")
+	tmpDirPath := filepath.Join(os.TempDir(), user.Username, "rpm-build-env")
+	if _, err := os.Stat(tmpDirPath); err != nil {
+		if mkdirErr := os.MkdirAll(tmpDirPath, os.ModePerm); mkdirErr != nil {
+			return file, errors.WithStack(mkdirErr)
+		}
+	}
 
-	content := "#!/bin/bash\n\n"
+	tmpDir, err := ioutil.TempDir(tmpDirPath, "")
+	if err != nil {
+		return file, errors.WithStack(err)
+	}
+
+	tmpFileName := filepath.Join(tmpDir, p.Name+".sh")
+
+	content := fmt.Sprintf("# Global environment variables for %s\n\n", p.Name)
 
 	for k, v := range p.Envs {
-		content += fmt.Sprintf("%s=%s\n", k, v)
-	}
-	content += fmt.Sprint("\n")
-	for k := range p.Envs {
-		content += fmt.Sprintf("export %s\n", k)
+		content += fmt.Sprintf("export %s=%s\n", k, v)
 	}
 
-	return file, errors.WithStack(ioutil.WriteFile(file, []byte(content), 0644))
+	return tmpFileName, errors.WithStack(ioutil.WriteFile(tmpFileName, []byte(content), 0644))
 }
 
 type fileItem struct {
-	Path string
-	Type string
+	Path        string
+	Permissions string
+	Owner       string
+	Group       string
 }
 
 type fileItems []fileItem
