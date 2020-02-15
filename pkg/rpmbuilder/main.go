@@ -49,9 +49,14 @@ type Package struct {
 	Requires          []string          `json:"requires,omitempty"`
 	Provides          []string          `json:"provides,omitempty"`
 	Conflicts         []string          `json:"conflicts,omitempty"`
-	Envs              map[string]string `json:"envs,omitempty"`
+	Envs              []*EnvVar         `json:"envs,omitempty"`
 	Menus             []menu            `json:"menus"`
 	AutoReqProv       string            `json:"auto-req-prov,omitempty"`
+}
+
+type EnvVar struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type fileInstruction struct {
@@ -196,8 +201,8 @@ func (p *Package) Normalize(params map[string]string) error {
 	}
 
 	if len(p.Envs) > 0 {
-		for k, v := range p.Envs {
-			p.Envs[k] = replaceTokens(v, tokens)
+		for _, v := range p.Envs {
+			v.Value = replaceTokens(v.Value, tokens)
 		}
 		envFile, err := p.WriteEnvFile()
 		if err != nil {
@@ -213,7 +218,7 @@ func (p *Package) Normalize(params map[string]string) error {
 		log.Infof("Added env File=%q\n", sc)
 		p.Files = append(p.Files, sc)
 	}
-	log.Infof("p.Envs=%s\n", p.Envs)
+	log.Infof("p.Envs=%q\n", p.Envs)
 	log.Infof("p.Requires=%s\n", p.Requires)
 	log.Infof("p.BuildRequires=%s\n", p.BuildRequires)
 	log.Infof("p.AutoReqProv=%s\n", p.AutoReqProv)
@@ -708,8 +713,8 @@ func (p *Package) WriteEnvFile() (string, error) {
 
 	content := fmt.Sprintf("# Global environment variables for %s\n\n", p.Name)
 
-	for k, v := range p.Envs {
-		content += fmt.Sprintf("export %s=%s\n", k, v)
+	for _, v := range p.Envs {
+		content += fmt.Sprintf("export %s=%s\n", v.Name, v.Value)
 	}
 
 	return tmpFileName, errors.WithStack(ioutil.WriteFile(tmpFileName, []byte(content), 0644))
