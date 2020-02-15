@@ -1,0 +1,70 @@
+{
+  "name": "node-exporter",
+  "version": "!version!",
+  "arch": "!arch!",
+  "release": "!release!",
+  "distro": "!distro!",
+  "cpu": "!cpu!",
+  "summary": "Prometheus Exporter for machine metrics",
+  "group": "System Environments/Daemons",
+  "license": "Apache 2.0",
+  "url": "https://github.com/prometheus/node_exporter",
+  "description": "Prometheus exporter for hardware and OS metrics exposed by *NIX kernels, written in Go with pluggable metric collectors.",
+  "changelog-cmd": "cat CHANGELOG",
+  "files": [
+    {
+      "base": "./src/node_exporter-!version!.linux-!arch!/",
+      "from": "./src/node_exporter-!version!.linux-!arch!/node_exporter",
+      "to": "%{_prefix}/local/bin",
+      "perms": "0755",
+      "owner": "root",
+      "group": "root"
+    },
+    {
+      "base": "./etc/sysconfig",
+      "from": "./etc/sysconfig/!name!.conf",
+      "to": "%{_sysconfdir}/sysconfig",
+      "perms": "0644",
+      "owner": "root",
+      "group": "root"
+    },
+    {
+      "base": "./lib/systemd/system",
+      "from": "./lib/systemd/system/!name!.service",
+      "to": "%{_unitdir}/",
+      "perms": "0644",
+      "owner": "root",
+      "group": "root"
+    },
+    {
+      "base": "./usr/lib/tmpfiles.d",
+      "from": "./usr/lib/tmpfiles.d/!name!.conf",
+      "to": "%{_prefix}/lib/tmpfiles.d",
+      "perms": "0644",
+      "owner": "root",
+      "group": "root"
+    }
+  ],
+  "build-requires": [
+    "systemd"
+  ],
+  "sources": [
+    "node-exporter-!version!-!release!.!distro!.!cpu!.tar.gz"
+  ],
+  "pre_install_script": "scripts/pre_install.sh",
+  "post_install_script": "scripts/post_install.sh",
+  "pre_remove_script": "scripts/pre_remove.sh",
+  "post_remove_script": "scripts/post_remove.sh",
+  "verify_script": "scripts/verify.sh",
+  "cleanup_script": "scripts/cleanup.sh",
+  "envs": [
+    {
+      "name": "NODE_EXPORTER_VERSION",
+      "value": "!version!"
+    },
+    {
+      "name": "NODE_EXPORTER_PORT",
+      "value": "9100"
+    }
+  ]
+}
