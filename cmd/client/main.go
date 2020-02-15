@@ -5,6 +5,7 @@ import (
 	"fmt"
 	rpmbuilder "github.com/greenpau/go-rpm-build-lib/pkg/rpmbuilder"
 	"github.com/urfave/cli"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -43,7 +44,7 @@ func main() {
 				&cli.StringFlag{
 					Name:  "arch, a",
 					Value: "",
-					Usage: "Target architecture of the build, e.g. amd64",
+					Usage: "Target CPU architecture of the build, e.g. amd64",
 				},
 				&cli.StringFlag{
 					Name:  "version",
@@ -54,6 +55,21 @@ func main() {
 					Name:  "release",
 					Value: "",
 					Usage: "Target release of the build",
+				},
+				&cli.StringFlag{
+					Name:  "distro",
+					Value: "",
+					Usage: "Target distribution of the build",
+				},
+				&cli.StringFlag{
+					Name:  "cpu",
+					Value: "",
+					Usage: "Target CPU Instruction Set Architecture (ISA) of the build, e.g. x86_64",
+				},
+				&cli.StringFlag{
+					Name:  "output, o",
+					Value: "",
+					Usage: "File path to the resulting RPM .spec file",
 				},
 			},
 		},
@@ -75,7 +91,22 @@ func main() {
 				&cli.StringFlag{
 					Name:  "arch, a",
 					Value: "",
-					Usage: "Target architecture of the build",
+					Usage: "Target CPU architecture of the build, e.g. amd64",
+				},
+				&cli.StringFlag{
+					Name:  "release",
+					Value: "",
+					Usage: "Target release of the build",
+				},
+				&cli.StringFlag{
+					Name:  "distro",
+					Value: "",
+					Usage: "Target distribution of the build",
+				},
+				&cli.StringFlag{
+					Name:  "cpu",
+					Value: "",
+					Usage: "Target CPU Instruction Set Architecture (ISA) of the build, e.g. x86_64",
 				},
 				&cli.StringFlag{
 					Name:  "output, o",
@@ -156,18 +187,26 @@ func GetVersion() string {
 }
 
 func generateSpec(c *cli.Context) error {
-	file := c.String("file")
-	arch := c.String("arch")
-	version := c.String("version")
-	release := c.String("release")
+	cliInput := make(map[string]string)
+	cliInput["file"] = c.String("file")
+	cliInput["arch"] = c.String("arch")
+	cliInput["version"] = c.String("version")
+	cliInput["release"] = c.String("release")
+	cliInput["distro"] = c.String("distro")
+	cliInput["cpu"] = c.String("cpu")
 
+	if cliInput["file"] == "" {
+		return cli.NewExitError("--file,-f argument is required", 1)
+	}
+
+	output := c.String("output")
 	rpmJSON := rpmbuilder.Package{}
 
-	if err := rpmJSON.Load(file); err != nil {
+	if err := rpmJSON.Load(cliInput["file"]); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	if err := rpmJSON.Normalize(arch, version, release); err != nil {
+	if err := rpmJSON.Normalize(cliInput); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
@@ -175,7 +214,14 @@ func generateSpec(c *cli.Context) error {
 	if err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
-	fmt.Printf("%s", spec)
+
+	if output != "" {
+		if err := ioutil.WriteFile(output, []byte(spec), 0644); err != nil {
+			return cli.NewExitError(err.Error(), 1)
+		}
+	} else {
+		fmt.Printf("%s", spec)
+	}
 
 	return nil
 }
@@ -183,20 +229,23 @@ func generateSpec(c *cli.Context) error {
 func generatePkg(c *cli.Context) error {
 	var err error
 
-	file := c.String("file")
-	arch := c.String("arch")
-	release := c.String("release")
-	version := c.String("version")
+	cliInput := make(map[string]string)
+	cliInput["file"] = c.String("file")
+	cliInput["arch"] = c.String("arch")
+	cliInput["version"] = c.String("version")
+	cliInput["release"] = c.String("release")
+	cliInput["distro"] = c.String("distro")
+	cliInput["cpu"] = c.String("cpu")
+
 	buildArea := c.String("build-area")
 	output := c.String("output")
-
 	if output == "" {
 		return cli.NewExitError("--output,-o argument is required", 1)
 	}
 
 	rpmJSON := rpmbuilder.Package{}
 
-	if err = rpmJSON.Load(file); err != nil {
+	if err = rpmJSON.Load(cliInput["file"]); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
@@ -204,7 +253,7 @@ func generatePkg(c *cli.Context) error {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
-	if err = rpmJSON.Normalize(arch, version, release); err != nil {
+	if err = rpmJSON.Normalize(cliInput); err != nil {
 		return cli.NewExitError(err.Error(), 1)
 	}
 

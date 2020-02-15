@@ -12,7 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"os/user"
+	//"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -28,6 +28,8 @@ type Package struct {
 	Version           string            `json:"version,omitempty"`
 	Arch              string            `json:"arch,omitempty"`
 	Release           string            `json:"release,omitempty"`
+	Distro            string            `json:"distro,omitempty"`
+	CPU               string            `json:"cpu,omitempty"`
 	Group             string            `json:"group,omitempty"`
 	License           string            `json:"license,omitempty"`
 	URL               string            `json:"url,omitempty"`
@@ -93,17 +95,19 @@ func (p *Package) Load(file string) error {
 }
 
 // Normalize build information
-func (p *Package) Normalize(arch string, version string, release string) error {
-
+//func (p *Package) Normalize(arch string, version string, release string) error {
+func (p *Package) Normalize(params map[string]string) error {
 	tokens := make(map[string]string)
-	tokens["!version!"] = version
-	tokens["!release!"] = release
-	tokens["!arch!"] = arch
+	for k, v := range params {
+		tokens["!"+k+"!"] = v
+	}
 	tokens["!name!"] = p.Name
 
 	p.Version = replaceTokens(p.Version, tokens)
 	p.Release = replaceTokens(p.Release, tokens)
 	p.Arch = replaceTokens(p.Arch, tokens)
+	p.Distro = replaceTokens(p.Distro, tokens)
+	p.CPU = replaceTokens(p.CPU, tokens)
 	p.URL = replaceTokens(p.URL, tokens)
 	p.Summary = replaceTokens(p.Summary, tokens)
 	p.Description = replaceTokens(p.Description, tokens)
@@ -111,14 +115,22 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	p.ChangelogCmd = replaceTokens(p.ChangelogCmd, tokens)
 
 	if p.Release == "" {
-		p.Release = "1"
+		return errors.WithStack(fmt.Errorf("release not found"))
 	}
 	if p.Version == "" {
-		p.Version = version
+		return errors.WithStack(fmt.Errorf("version not found"))
 	}
 	if p.Arch == "" {
-		p.Arch = arch
+		return errors.WithStack(fmt.Errorf("arch not found"))
 	}
+	if p.Distro == "" {
+		return errors.WithStack(fmt.Errorf("distro not found"))
+	}
+	p.Release += "." + p.Distro
+	if p.CPU == "" {
+		return errors.WithStack(fmt.Errorf("cpu family not found"))
+	}
+
 	for i, v := range p.Files {
 		p.Files[i].From = replaceTokens(v.From, tokens)
 		p.Files[i].Base = replaceTokens(v.Base, tokens)
@@ -127,6 +139,8 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	log.Infof("Arch=%s\n", p.Arch)
 	log.Infof("Version=%s\n", p.Version)
 	log.Infof("Release=%s\n", p.Release)
+	log.Infof("Distribution=%s\n", p.Distro)
+	log.Infof("CPU Family=%s\n", p.CPU)
 	log.Infof("URL=%s\n", p.URL)
 	log.Infof("Summary=%s\n", p.Summary)
 	log.Infof("Description=%s\n", p.Description)
@@ -671,24 +685,26 @@ func (p *Package) WriteEnvFile() (string, error) {
 
 	file := ""
 
-	user, err := user.Current()
-	if err != nil {
-		return file, errors.WithStack(err)
-	}
+	//user, err := user.Current()
+	//if err != nil {
+	//	return file, errors.WithStack(err)
+	//}
 
-	tmpDirPath := filepath.Join(os.TempDir(), user.Username, "rpm-build-env")
+	//tmpDirPath := filepath.Join(os.TempDir(), user.Username, "rpm-build-env")
+	tmpDirPath := filepath.Join("./etc/profile.d/")
 	if _, err := os.Stat(tmpDirPath); err != nil {
 		if mkdirErr := os.MkdirAll(tmpDirPath, os.ModePerm); mkdirErr != nil {
 			return file, errors.WithStack(mkdirErr)
 		}
 	}
 
-	tmpDir, err := ioutil.TempDir(tmpDirPath, "")
-	if err != nil {
-		return file, errors.WithStack(err)
-	}
+	//tmpDir, err := ioutil.TempDir(tmpDirPath, "")
+	//if err != nil {
+	//	return file, errors.WithStack(err)
+	//}
 
-	tmpFileName := filepath.Join(tmpDir, p.Name+".sh")
+	//tmpFileName := filepath.Join(tmpDir, p.Name+".sh")
+	tmpFileName := filepath.Join(tmpDirPath, p.Name+".sh")
 
 	content := fmt.Sprintf("# Global environment variables for %s\n\n", p.Name)
 
