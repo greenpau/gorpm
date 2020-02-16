@@ -14,6 +14,7 @@ Build RPM Packages with Go.
 The `assets/projects` contains real-life examples of packaging:
 
 * Prometheus Node Exporter
+* Prometheus Blackbox Exporter
 
 First, try building the `node_exporter`. If you experience failures,
 please open Github Issue to get assistance.
