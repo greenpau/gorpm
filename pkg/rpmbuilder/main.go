@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/semver"
+	//"github.com/davecgh/go-spew/spew"
 	"github.com/mattn/go-zglob"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -11,6 +12,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	//"os/user"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,37 +24,48 @@ func init() {
 
 // Package contains the build information
 type Package struct {
-	Name          string            `json:"name"`
-	Version       string            `json:"version,omitempty"`
-	Arch          string            `json:"arch,omitempty"`
-	Release       string            `json:"release,omitempty"`
-	Group         string            `json:"group,omitempty"`
-	License       string            `json:"license,omitempty"`
-	URL           string            `json:"url,omitempty"`
-	Summary       string            `json:"summary,omitempty"`
-	Description   string            `json:"description,omitempty"`
-	ChangelogFile string            `json:"changelog-file,omitempty"`
-	ChangelogCmd  string            `json:"changelog-cmd,omitempty"`
-	Files         []fileInstruction `json:"files,omitempty"`
-	PreInst       string            `json:"preinst,omitempty"`
-	PostInst      string            `json:"postinst,omitempty"`
-	PreRm         string            `json:"prerm,omitempty"`
-	PostRm        string            `json:"postrm,omitempty"`
-	Verify        string            `json:"verify,omitempty"`
-	BuildRequires []string          `json:"build-requires,omitempty"`
-	Requires      []string          `json:"requires,omitempty"`
-	Provides      []string          `json:"provides,omitempty"`
-	Conflicts     []string          `json:"conflicts,omitempty"`
-	Envs          map[string]string `json:"envs,omitempty"`
-	Menus         []menu            `json:"menus"`
-	AutoReqProv   string            `json:"auto-req-prov,omitempty"`
+	Name              string            `json:"name"`
+	Version           string            `json:"version,omitempty"`
+	Arch              string            `json:"arch,omitempty"`
+	Release           string            `json:"release,omitempty"`
+	Distro            string            `json:"distro,omitempty"`
+	CPU               string            `json:"cpu,omitempty"`
+	Group             string            `json:"group,omitempty"`
+	License           string            `json:"license,omitempty"`
+	URL               string            `json:"url,omitempty"`
+	Summary           string            `json:"summary,omitempty"`
+	Description       string            `json:"description,omitempty"`
+	ChangelogFile     string            `json:"changelog-file,omitempty"`
+	ChangelogCmd      string            `json:"changelog-cmd,omitempty"`
+	Files             []fileInstruction `json:"files,omitempty"`
+	Sources           []string          `json:"sources,omitempty"`
+	PreInstallScript  string            `json:"pre_install_script,omitempty"`
+	PostInstallScript string            `json:"post_install_script,omitempty"`
+	PreRemoveScript   string            `json:"pre_remove_script,omitempty"`
+	PostRemoveScript  string            `json:"post_remove_script,omitempty"`
+	VerifyScript      string            `json:"verify_script,omitempty"`
+	CleanupScript     string            `json:"cleanup_script,omitempty"`
+	BuildRequires     []string          `json:"build-requires,omitempty"`
+	Requires          []string          `json:"requires,omitempty"`
+	Provides          []string          `json:"provides,omitempty"`
+	Conflicts         []string          `json:"conflicts,omitempty"`
+	Envs              []*EnvVar         `json:"envs,omitempty"`
+	Menus             []menu            `json:"menus"`
+	AutoReqProv       string            `json:"auto-req-prov,omitempty"`
+}
+
+type EnvVar struct {
+	Name  string `json:"name,omitempty"`
+	Value string `json:"value,omitempty"`
 }
 
 type fileInstruction struct {
-	From string `json:"from, omitempty"`
-	To   string `json:"to, omitempty"`
-	Base string `json:"base, omitempty"`
-	Type string `json:"type, omitempty"`
+	From        string `json:"from,omitempty"`
+	To          string `json:"to,omitempty"`
+	Base        string `json:"base,omitempty"`
+	Permissions string `json:"perms,omitempty"`
+	Owner       string `json:"owner,omitempty"`
+	Group       string `json:"group,omitempty"`
 }
 
 type menu struct {
@@ -87,17 +100,19 @@ func (p *Package) Load(file string) error {
 }
 
 // Normalize build information
-func (p *Package) Normalize(arch string, version string, release string) error {
-
+//func (p *Package) Normalize(arch string, version string, release string) error {
+func (p *Package) Normalize(params map[string]string) error {
 	tokens := make(map[string]string)
-	tokens["!version!"] = version
-	tokens["!release!"] = release
-	tokens["!arch!"] = arch
+	for k, v := range params {
+		tokens["!"+k+"!"] = v
+	}
 	tokens["!name!"] = p.Name
 
 	p.Version = replaceTokens(p.Version, tokens)
 	p.Release = replaceTokens(p.Release, tokens)
 	p.Arch = replaceTokens(p.Arch, tokens)
+	p.Distro = replaceTokens(p.Distro, tokens)
+	p.CPU = replaceTokens(p.CPU, tokens)
 	p.URL = replaceTokens(p.URL, tokens)
 	p.Summary = replaceTokens(p.Summary, tokens)
 	p.Description = replaceTokens(p.Description, tokens)
@@ -105,14 +120,22 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	p.ChangelogCmd = replaceTokens(p.ChangelogCmd, tokens)
 
 	if p.Release == "" {
-		p.Release = "1"
+		return errors.WithStack(fmt.Errorf("release not found"))
 	}
 	if p.Version == "" {
-		p.Version = version
+		return errors.WithStack(fmt.Errorf("version not found"))
 	}
 	if p.Arch == "" {
-		p.Arch = arch
+		return errors.WithStack(fmt.Errorf("arch not found"))
 	}
+	if p.Distro == "" {
+		return errors.WithStack(fmt.Errorf("distro not found"))
+	}
+	p.Release += "." + p.Distro
+	if p.CPU == "" {
+		return errors.WithStack(fmt.Errorf("cpu family not found"))
+	}
+
 	for i, v := range p.Files {
 		p.Files[i].From = replaceTokens(v.From, tokens)
 		p.Files[i].Base = replaceTokens(v.Base, tokens)
@@ -121,6 +144,8 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 	log.Infof("Arch=%s\n", p.Arch)
 	log.Infof("Version=%s\n", p.Version)
 	log.Infof("Release=%s\n", p.Release)
+	log.Infof("Distribution=%s\n", p.Distro)
+	log.Infof("CPU Family=%s\n", p.CPU)
 	log.Infof("URL=%s\n", p.URL)
 	log.Infof("Summary=%s\n", p.Summary)
 	log.Infof("Description=%s\n", p.Description)
@@ -169,9 +194,15 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 		}
 	}
 
+	if len(p.Sources) > 0 {
+		for i, v := range p.Sources {
+			p.Sources[i] = replaceTokens(v, tokens)
+		}
+	}
+
 	if len(p.Envs) > 0 {
-		for k, v := range p.Envs {
-			p.Envs[k] = replaceTokens(v, tokens)
+		for _, v := range p.Envs {
+			v.Value = replaceTokens(v.Value, tokens)
 		}
 		envFile, err := p.WriteEnvFile()
 		if err != nil {
@@ -181,10 +212,13 @@ func (p *Package) Normalize(arch string, version string, release string) error {
 		sc.From = envFile
 		sc.To = fmt.Sprintf("%%{_sysconfdir}/profile.d/")
 		sc.Base = filepath.Dir(envFile)
+		sc.Owner = "root"
+		sc.Group = "root"
+		sc.Permissions = "644"
 		log.Infof("Added env File=%q\n", sc)
 		p.Files = append(p.Files, sc)
 	}
-	log.Infof("p.Envs=%s\n", p.Envs)
+	log.Infof("p.Envs=%q\n", p.Envs)
 	log.Infof("p.Requires=%s\n", p.Requires)
 	log.Infof("p.BuildRequires=%s\n", p.BuildRequires)
 	log.Infof("p.AutoReqProv=%s\n", p.AutoReqProv)
@@ -304,6 +338,13 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 	if p.Summary != "" {
 		spec += fmt.Sprintf("Summary: %s\n", p.Summary)
 	}
+	if len(p.Sources) > 0 {
+		spec += "\n"
+		for _, v := range p.Sources {
+			spec += fmt.Sprintf("Source0: %s\n", v)
+		}
+		spec += "\n"
+	}
 	if len(p.BuildRequires) > 0 {
 		spec += fmt.Sprintf("\nBuildRequires: %s\n", strings.Join(p.BuildRequires, ", "))
 	}
@@ -321,7 +362,10 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 	}
 	spec += fmt.Sprintf("\n%%prep\n")
 	spec += fmt.Sprintf("\n%%build\n")
+
+	log.Warnf("Reached install section")
 	spec += fmt.Sprintf("\n%%install\n")
+
 	install, err := p.GenerateInstallSection(sourceDir)
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -334,6 +378,11 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 	}
 	spec += fmt.Sprintf("%s\n", files)
 	spec += fmt.Sprintf("\n%%clean\n")
+
+	if content := readFile(p.CleanupScript); content != "" {
+		spec += fmt.Sprintf("%s\n", content)
+	}
+
 	shortcutInstall := "\n"
 	for _, menu := range p.Menus {
 		shortcutInstall += fmt.Sprintf("desktop-file-install --vendor='' ")
@@ -342,21 +391,21 @@ func (p *Package) GenerateSpecFile(sourceDir string) (string, error) {
 		shortcutInstall += "\n"
 	}
 	shortcutInstall = strings.TrimSpace(shortcutInstall)
-	if content := readFile(p.PreInst); content != "" {
+	if content := readFile(p.PreInstallScript); content != "" {
 		spec += fmt.Sprintf("\n%%pre\n%s\n", content)
 	}
-	if content := readFile(p.PostInst); content != "" {
+	if content := readFile(p.PostInstallScript); content != "" {
 		spec += fmt.Sprintf("\n%%post\n%s\n", content+shortcutInstall)
 	} else if shortcutInstall != "" {
 		spec += fmt.Sprintf("\n%%post\n%s\n", shortcutInstall)
 	}
-	if content := readFile(p.PreRm); content != "" {
+	if content := readFile(p.PreRemoveScript); content != "" {
 		spec += fmt.Sprintf("\n%%preun\n%s\n", content)
 	}
-	if content := readFile(p.PostRm); content != "" {
+	if content := readFile(p.PostRemoveScript); content != "" {
 		spec += fmt.Sprintf("\n%%postun\n%s\n", content)
 	}
-	if content := readFile(p.Verify); content != "" {
+	if content := readFile(p.VerifyScript); content != "" {
 		spec += fmt.Sprintf("\n%%verifyscript\n%s\n", content)
 	}
 	spec += fmt.Sprintf("\n%%changelog\n")
@@ -374,6 +423,9 @@ func (p *Package) GenerateInstallSection(sourceDir string) (string, error) {
 	var err error
 	content := ""
 
+	log.Warnf("Generating install section")
+	log.Warnf("Source directory: %s", sourceDir)
+
 	allDirs := make([]string, 0)
 	allFiles := make([]string, 0)
 
@@ -382,6 +434,8 @@ func (p *Package) GenerateInstallSection(sourceDir string) (string, error) {
 	}
 
 	for i, fileInst := range p.Files {
+
+		log.Warnf("Processing %v", fileInst)
 
 		if fileInst.From == "" {
 			log.Infof("Skipped p.Files[%d] %q", i, fileInst)
@@ -458,14 +512,10 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 		from := fileInst.From
 		to := fileInst.To
 		base := fileInst.Base
-		ftype := fileInst.Type
-
-		if ftype != "" {
-			ftype = " " + ftype
-		}
+		filePerms := fileInst.Permissions
 
 		if from == "" {
-			content += fmt.Sprintf("%s\n", ftype)
+			content += fmt.Sprintf(" %s\n", filePerms)
 			continue
 		}
 
@@ -479,7 +529,9 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 		log.Infof("fileInst.From=%q\n", from)
 		log.Infof("fileInst.To=%q\n", to)
 		log.Infof("fileInst.Base=%q\n", base)
-		log.Infof("fileInst.Type=%q\n", ftype)
+		log.Infof("fileInst.Permissions=%q\n", filePerms)
+		log.Infof("fileInst.Owner=%q\n", fileInst.Owner)
+		log.Infof("fileInst.Group=%q\n", fileInst.Group)
 
 		items, err := zglob.Glob(from)
 		if err != nil {
@@ -496,13 +548,20 @@ func (p *Package) GenerateFilesSection(sourceDir string) (string, error) {
 			}
 			n = filepath.Join(to, n)
 			if fileItems(allItems).contains(n) == false {
-				allItems = append(allItems, fileItem{n, ftype})
+				allItems = append(allItems, fileItem{
+					n, filePerms,
+					fileInst.Owner,
+					fileInst.Group,
+				})
 			}
 		}
 	}
 
 	for _, item := range allItems {
-		content += fmt.Sprintf("%s%s\n", item.Type, item.Path)
+		content += "%"
+		content += fmt.Sprintf("attr(%s, %s, %s) %s\n",
+			item.Permissions, item.Owner, item.Group, item.Path,
+		)
 	}
 
 	log.Infof("content=\n%s\n", content)
@@ -631,29 +690,41 @@ func (p *Package) WriteEnvFile() (string, error) {
 
 	file := ""
 
-	tpmDir, err := ioutil.TempDir("", "rpm-envs")
-	if err != nil {
-		return file, errors.WithStack(err)
+	//user, err := user.Current()
+	//if err != nil {
+	//	return file, errors.WithStack(err)
+	//}
+
+	//tmpDirPath := filepath.Join(os.TempDir(), user.Username, "rpm-build-env")
+	tmpDirPath := filepath.Join("./etc/profile.d/")
+	if _, err := os.Stat(tmpDirPath); err != nil {
+		if mkdirErr := os.MkdirAll(tmpDirPath, os.ModePerm); mkdirErr != nil {
+			return file, errors.WithStack(mkdirErr)
+		}
 	}
 
-	file = filepath.Join(tpmDir, p.Name+".sh")
+	//tmpDir, err := ioutil.TempDir(tmpDirPath, "")
+	//if err != nil {
+	//	return file, errors.WithStack(err)
+	//}
 
-	content := "#!/bin/bash\n\n"
+	//tmpFileName := filepath.Join(tmpDir, p.Name+".sh")
+	tmpFileName := filepath.Join(tmpDirPath, p.Name+".sh")
 
-	for k, v := range p.Envs {
-		content += fmt.Sprintf("%s=%s\n", k, v)
+	content := fmt.Sprintf("# Global environment variables for %s\n\n", p.Name)
+
+	for _, v := range p.Envs {
+		content += fmt.Sprintf("export %s=%s\n", v.Name, v.Value)
 	}
-	content += fmt.Sprint("\n")
-	for k := range p.Envs {
-		content += fmt.Sprintf("export %s\n", k)
-	}
 
-	return file, errors.WithStack(ioutil.WriteFile(file, []byte(content), 0644))
+	return tmpFileName, errors.WithStack(ioutil.WriteFile(tmpFileName, []byte(content), 0644))
 }
 
 type fileItem struct {
-	Path string
-	Type string
+	Path        string
+	Permissions string
+	Owner       string
+	Group       string
 }
 
 type fileItems []fileItem

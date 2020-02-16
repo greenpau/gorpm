@@ -74,5 +74,7 @@ dep:
 	@dep version || go get -u github.com/golang/dep/cmd/dep
 	@dep ensure
 
-deploy:
+install:
+	@sudo rm -rf /usr/local/bin/go-rpm-builder
 	@sudo cp bin/go-rpm-builder /usr/local/bin/go-rpm-builder
+	@echo "Installed /usr/local/bin/go-rpm-builder"
