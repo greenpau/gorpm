@@ -9,6 +9,30 @@ Build RPM Packages with Go.
 * Generate RPM SPEC file
 * Generate RPM package
 
+## Examples
+
+The `assets/projects` contains real-life examples of packaging:
+
+* Prometheus Node Exporter
+
+First, try building the `node_exporter`. If you experience failures,
+please open Github Issue to get assistance.
+
+Build `node_exporter` project in the following way:
+
+```
+cd assets/projects/node_exporter
+make
+```
+
+The RPM will be placed into `dist` directory:
+
+```
+SCP:       scp ./dist/node-exporter-0.18.1-5.el7.x86_64.rpm root@remote:/tmp/
+Install:   sudo yum -y localinstall ./dist/node-exporter-0.18.1-5.el7.x86_64.rpm
+RPM File:  ./dist/node-exporter-0.18.1-5.el7.x86_64.rpm
+```
+
 ## Getting Started
 
 Build `go-rpm-builder` binary:
@@ -46,19 +70,20 @@ Next, review more specific `go-rpm-builder` arguments, e.g.
 `generate` or `generate-spec`:
 
 ```
-$ bin/go-rpm-builder generate -h
-
+$ go-rpm-builder generate-spec --help
 NAME:
-   go-rpm-builder generate - Generate the package
+   go-rpm-builder generate-spec - Generate the SPEC file
 
 USAGE:
-   go-rpm-builder generate [command options] [arguments...]
+   go-rpm-builder generate-spec [command options] [arguments...]
 
 OPTIONS:
    --file value     Path to the rpm_config.json file (default: "rpm_config.json")
-   -b value         Path to the build area (default: "pkg-build")
-   -a value         Target architecture of the build
-   -o value         File path to the resulting rpm file
+   --arch value     Target CPU architecture of the build, e.g. amd64
    --version value  Target version of the build
+   --release value  Target release of the build
+   --distro value   Target distribution of the build
+   --cpu value      Target CPU Instruction Set Architecture (ISA) of the build, e.g. x86_64
+   --output value   File path to the resulting RPM .spec file
    --help, -h       show help (default: false)
 ```

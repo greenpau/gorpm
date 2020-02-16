@@ -1,4 +1,6 @@
 bin/
+assets/projects/*/src/**
+assets/projects/*/dist/**
 
 # Binaries for programs and plugins
 *.exe
