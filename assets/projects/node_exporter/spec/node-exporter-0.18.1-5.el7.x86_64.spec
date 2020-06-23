@@ -24,11 +24,11 @@ mkdir -p %{buildroot}/%{_sysconfdir}/sysconfig
 mkdir -p %{buildroot}/%{_unitdir}
 mkdir -p %{buildroot}/%{_prefix}/lib/tmpfiles.d
 mkdir -p %{buildroot}/%{_sysconfdir}/profile.d
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/node_exporter/src/node_exporter-0.18.1.linux-amd64/node_exporter %{buildroot}/%{_prefix}/local/bin
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/node_exporter/etc/sysconfig/node-exporter.conf %{buildroot}/%{_sysconfdir}/sysconfig
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/node_exporter/lib/systemd/system/node-exporter.service %{buildroot}/%{_unitdir}
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/node_exporter/usr/lib/tmpfiles.d/node-exporter.conf %{buildroot}/%{_prefix}/lib/tmpfiles.d
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/node_exporter/etc/profile.d/node-exporter.sh %{buildroot}/%{_sysconfdir}/profile.d
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/node_exporter/src/node_exporter-0.18.1.linux-amd64/node_exporter %{buildroot}/%{_prefix}/local/bin
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/node_exporter/etc/sysconfig/node-exporter.conf %{buildroot}/%{_sysconfdir}/sysconfig
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/node_exporter/lib/systemd/system/node-exporter.service %{buildroot}/%{_unitdir}
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/node_exporter/usr/lib/tmpfiles.d/node-exporter.conf %{buildroot}/%{_prefix}/lib/tmpfiles.d
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/node_exporter/etc/profile.d/node-exporter.sh %{buildroot}/%{_sysconfdir}/profile.d
 
 
 %files

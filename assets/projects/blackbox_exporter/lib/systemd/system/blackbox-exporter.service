@@ -1,0 +1,17 @@
+[Unit]
+Description=Prometheus Blackbox Exporter
+Wants=network.target
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=-/etc/sysconfig/blackbox-exporter.conf
+ExecStart=/usr/local/bin/blackbox_exporter $OPTIONS
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+User=blackbox_exporter
+Group=blackbox_exporter
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -2,11 +2,11 @@
 set -e
 #set -x
 
-PKG_NAME=node-exporter
+PKG_NAME=blackbox-exporter
 PKG_RPM_DIR=`pwd`/`dirname $0`
-PKG_BINARY=node_exporter
-PKG_VERSION=0.18.1
-PKG_RELEASE=5
+PKG_BINARY=blackbox_exporter
+PKG_VERSION=0.16.0
+PKG_RELEASE=2
 PKG_DISTRO=el7
 PKG_CPU_ISA=x86_64
 PKG_CPU_ARCH=amd64
@@ -61,8 +61,10 @@ if [ -f "src/${TAR_DIR}/${PKG_BINARY}" ]; then
   chmod +x src/${TAR_DIR}/${PKG_BINARY}
   src/${TAR_DIR}/${PKG_BINARY} --version
   mkdir -p ./usr/local/bin
+  mkdir -p ./etc/${PKG_NAME}
   cat src/${TAR_DIR}/${PKG_BINARY} > ./usr/local/bin/${PKG_BINARY}
   chmod +x ./usr/local/bin/${PKG_BINARY}
+  cat src/${TAR_DIR}/blackbox.yml > ./etc/${PKG_NAME}/config.yaml
 else
   echo "ERROR: src/${TAR_DIR}/${PKG_BINARY} does not exist"
   exit 1
@@ -93,6 +95,7 @@ cd ${PKG_RPM_DIR}
 tar --strip-components 1 --owner=0 --group=0 \
   -czvf ~/rpmbuild/SOURCES/${PKG_RPM_FILE}.tar.gz \
   ./etc/sysconfig/${PKG_NAME}.conf \
+  ./etc/${PKG_NAME}/config.yaml \
   ./etc/profile.d/${PKG_NAME}.sh \
   ./lib/systemd/system/${PKG_NAME}.service \
   ./usr/lib/tmpfiles.d/${PKG_NAME}.conf \

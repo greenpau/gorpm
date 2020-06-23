@@ -1,8 +1,8 @@
 # Getting Started
 
-The `rpm_config.json` is a configuration file for `go-rpm-builder` utility.
+The `config.json` is a configuration file for `gorpm` utility.
 
-In the `rpm_config.json`, under `files` section, we define the files to install:
+In the `config.json`, under `files` section, we define the files to install:
 
 * `src/node_exporter-0.18.1.linux-amd64/node_exporter`: main executable that goes to `/usr/local/bin/`
 * `etc/profile.d/node-exporter.sh`: is the `/etc/profile.d/` file with environment variables
