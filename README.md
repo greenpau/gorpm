@@ -1,4 +1,4 @@
-# go-rpm-build-lib
+# gorpm
 
 Build RPM Packages with Go.
 
@@ -36,22 +36,22 @@ RPM File:  ./dist/node-exporter-0.18.1-5.el7.x86_64.rpm
 
 ## Getting Started
 
-Build `go-rpm-builder` binary:
+Build `gorpm` binary:
 
 ```
 make
 ```
 
-Next, review `go-rpm-builder` help:
+Next, review `gorpm` help:
 
 ```
-$ go-rpm-builder -h
+$ gorpm -h
 
 NAME:
-   go-rpm-builder - RPM utilities in Go
+   gorpm - RPM utilities in Go
 
 USAGE:
-   go-rpm-builder <cmd> <options>
+   gorpm <cmd> <options>
 
 VERSION:
    1.0.0
@@ -67,19 +67,19 @@ GLOBAL OPTIONS:
    --version, -v  print the version (default: false)
 ```
 
-Next, review more specific `go-rpm-builder` arguments, e.g.
+Next, review more specific `gorpm` arguments, e.g.
 `generate` or `generate-spec`:
 
 ```
-$ go-rpm-builder generate-spec --help
+$ gorpm generate-spec --help
 NAME:
-   go-rpm-builder generate-spec - Generate the SPEC file
+   gorpm generate-spec - Generate the SPEC file
 
 USAGE:
-   go-rpm-builder generate-spec [command options] [arguments...]
+   gorpm generate-spec [command options] [arguments...]
 
 OPTIONS:
-   --file value     Path to the rpm_config.json file (default: "rpm_config.json")
+   --file value     Path to the config.json file (default: "config.json")
    --arch value     Target CPU architecture of the build, e.g. amd64
    --version value  Target version of the build
    --release value  Target release of the build

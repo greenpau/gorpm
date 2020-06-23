@@ -1,4 +1,4 @@
-package rpmbuilder
+package gorpm
 
 import (
 	"github.com/pkg/errors"

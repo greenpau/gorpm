@@ -4,9 +4,9 @@ GIT_COMMIT:=$(shell git describe --dirty --always)
 GIT_BRANCH:=$(shell git rev-parse --abbrev-ref HEAD -- | head -1)
 BUILD_USER:=$(shell whoami)
 BUILD_DATE:=$(shell date +"%Y-%m-%d")
-PROJECT:="github.com/greenpau/go-rpm-build-lib"
-BINARY:="go-rpm-builder"
-CORE_PKG="rpmbuilder"
+PROJECT:="github.com/greenpau/gorpm"
+BINARY:="gorpm"
+CORE_PKG="gorpm"
 VERBOSE:=-v
 ifdef TEST
 	TEST:="-run ${TEST}"
@@ -27,7 +27,7 @@ build:
 		-X main.buildUser=$(BUILD_USER) \
 		-X main.buildDate=$(BUILD_DATE)" \
 		-gcflags="all=-trimpath=$(GOPATH)/src" \
-		-asmflags="all=-trimpath $(GOPATH)/src" cmd/client/*
+		-asmflags="all=-trimpath $(GOPATH)/src" cmd/$(BINARY)/*
 	@echo "Done!"
 
 linter:
@@ -66,15 +66,33 @@ qtest:
 	@go test -v -run TestNewSpec ./pkg/$(CORE_PKG)/*.go
 	@#go test -v -run TestNewBuild ./pkg/$(CORE_PKG)/*.go
 
+install:
+	@sudo rm -rf /usr/local/bin/gorpm
+	@sudo cp bin/gorpm /usr/local/bin/gorpm
+	@echo "Installed /usr/local/bin/gorpm"
+
 dep:
 	@echo "Making dependencies check ..."
-	@golint || go get -u golang.org/x/lint/golint
-	@#echo "Clean GOPATH/pkg/dep/sources/ if necessary"
-	@#rm -rf $GOPATH/pkg/dep/sources/https---github.com-greenpau*
-	@dep version || go get -u github.com/golang/dep/cmd/dep
-	@dep ensure
+	@go get -u golang.org/x/lint/golint
+	@go get -u golang.org/x/tools/cmd/godoc
+	@go get -u github.com/kyoh86/richgo
+	@go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
 
-install:
-	@sudo rm -rf /usr/local/bin/go-rpm-builder
-	@sudo cp bin/go-rpm-builder /usr/local/bin/go-rpm-builder
-	@echo "Installed /usr/local/bin/go-rpm-builder"
+release:
+	@echo "Making release"
+	@if [ $(GIT_BRANCH) != "master" ]; then echo "cannot release to non-master branch $(GIT_BRANCH)" && false; fi
+	@git diff-index --quiet HEAD -- || ( echo "git directory is dirty, commit changes first" && false )
+	@versioned -patch
+	@echo "Patched version"
+	@git add VERSION
+	@git commit -m "released v`cat VERSION | head -1`"
+	@git tag -a v`cat VERSION | head -1` -m "v`cat VERSION | head -1`"
+	@git push
+	@git push --tags
+	@@echo "If necessary, run the following commands:"
+	@echo "  git push --delete origin v$(PLUGIN_VERSION)"
+	@echo "  git tag --delete v$(PLUGIN_VERSION)"
+
+logo:
+	@mkdir -p assets/docs/images
+	@convert -background black -fill white -font DejaVu-Sans-Bold -size 640x320! -gravity center -pointsize 96 label:'GoRPM' PNG32:assets/docs/images/logo.png

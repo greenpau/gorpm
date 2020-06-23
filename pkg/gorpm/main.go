@@ -1,4 +1,4 @@
-package rpmbuilder
+package gorpm
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ import (
 )
 
 func init() {
-	log.Debugf("initialized package rpmbuilder")
+	log.Debugf("initialized package gorpm")
 }
 
 // Package contains the build information

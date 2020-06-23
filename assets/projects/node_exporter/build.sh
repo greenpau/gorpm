@@ -31,10 +31,10 @@ printf "INFO: PKG_RPM_SPEC_FILE is set to '"${PKG_RPM_SPEC_FILE}"'\n";
 printf "INFO: Download URL: ${DOWNLOAD_URL}\n"
 printf "INFO: Download file name: ${URL_FILENAME}\n"
 
-printf "INFO: Testing rpm_config.json file\n"
+printf "INFO: Testing config.json file\n"
 cd ${PKG_RPM_DIR}
-go-rpm-builder --version
-go-rpm-builder test --file rpm_config.json
+gorpm --version
+gorpm test --file config.json
 if [ $? -eq 0 ]; then
     echo "INFO: Successfully validated configuration file"
 else
@@ -76,11 +76,11 @@ echo '%_topdir %(echo $HOME)/rpmbuild' > ~/.rpmmacros
 # Architectures: https://github.com/golang/go/blob/master/src/go/build/syslist.go
 # Common architectures are: amd64, 386
 #
-# go-rpm-builder generate-spec --version 1.0.0 --file rpm_config.json --arch 386
-# go-rpm-builder generate-spec --version 1.0.0 --file rpm_config.json --arch amd64
+# gorpm generate-spec --version 1.0.0 --file config.json --arch 386
+# gorpm generate-spec --version 1.0.0 --file config.json --arch amd64
 
-go-rpm-builder generate-spec \
-  --file rpm_config.json \
+gorpm generate-spec \
+  --file config.json \
   --arch "${PKG_CPU_ARCH}" \
   --version ${PKG_VERSION} \
   --release ${PKG_RELEASE} \

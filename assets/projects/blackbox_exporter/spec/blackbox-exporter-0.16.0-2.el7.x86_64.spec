@@ -25,12 +25,12 @@ mkdir -p %{buildroot}/%{_sysconfdir}/blackbox-exporter
 mkdir -p %{buildroot}/%{_unitdir}
 mkdir -p %{buildroot}/%{_prefix}/lib/tmpfiles.d
 mkdir -p %{buildroot}/%{_sysconfdir}/profile.d
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/blackbox_exporter/src/blackbox_exporter-0.16.0.linux-amd64/blackbox_exporter %{buildroot}/%{_prefix}/local/bin
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/blackbox_exporter/etc/sysconfig/blackbox-exporter.conf %{buildroot}/%{_sysconfdir}/sysconfig
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/blackbox_exporter/etc/blackbox-exporter/config.yaml %{buildroot}/%{_sysconfdir}/blackbox-exporter
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/blackbox_exporter/lib/systemd/system/blackbox-exporter.service %{buildroot}/%{_unitdir}
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/blackbox_exporter/usr/lib/tmpfiles.d/blackbox-exporter.conf %{buildroot}/%{_prefix}/lib/tmpfiles.d
-cp /home/greenpau/dev/go/src/github.com/greenpau/go-rpm-build-lib/assets/projects/blackbox_exporter/etc/profile.d/blackbox-exporter.sh %{buildroot}/%{_sysconfdir}/profile.d
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/blackbox_exporter/src/blackbox_exporter-0.16.0.linux-amd64/blackbox_exporter %{buildroot}/%{_prefix}/local/bin
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/blackbox_exporter/etc/sysconfig/blackbox-exporter.conf %{buildroot}/%{_sysconfdir}/sysconfig
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/blackbox_exporter/etc/blackbox-exporter/config.yaml %{buildroot}/%{_sysconfdir}/blackbox-exporter
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/blackbox_exporter/lib/systemd/system/blackbox-exporter.service %{buildroot}/%{_unitdir}
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/blackbox_exporter/usr/lib/tmpfiles.d/blackbox-exporter.conf %{buildroot}/%{_prefix}/lib/tmpfiles.d
+cp /home/greenpau/dev/go/src/github.com/greenpau/gorpm/assets/projects/blackbox_exporter/etc/profile.d/blackbox-exporter.sh %{buildroot}/%{_sysconfdir}/profile.d
 
 
 %files

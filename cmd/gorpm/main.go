@@ -3,34 +3,42 @@ package main
 
 import (
 	"fmt"
-	rpmbuilder "github.com/greenpau/go-rpm-build-lib/pkg/rpmbuilder"
+	"github.com/greenpau/gorpm/pkg/gorpm"
+	"github.com/greenpau/versioned"
 	"github.com/urfave/cli"
 	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 )
 
 var (
-	appName        = "go-rpm-builder"
-	appVersion     = "[untracked]"
-	appDocs        = "https://github.com/greenpau/go-rpm-build-lib/"
-	appDescription = "RPM utilities in Go"
-	gitBranch      string
-	gitCommit      string
-	buildUser      string // whoami
-	buildDate      string // date -u
+	app        *versioned.PackageManager
+	appVersion string
+	gitBranch  string
+	gitCommit  string
+	buildUser  string
+	buildDate  string
 )
 
+func init() {
+	app = versioned.NewPackageManager("gorpm")
+	app.Description = "RPM utilities in Go."
+	app.Documentation = "https://github.com/greenpau/gorpm/"
+	app.SetVersion(appVersion, "")
+	app.SetGitBranch(gitBranch, "")
+	app.SetGitCommit(gitCommit, "")
+	app.SetBuildUser(buildUser, "")
+	app.SetBuildDate(buildDate, "")
+}
+
 func main() {
-	app := cli.NewApp()
-	app.Name = GetAppName()
-	app.Version = GetVersion()
-	app.Usage = "RPM utilities in Go"
-	app.UsageText = fmt.Sprintf("%s <cmd> <options>", GetAppName())
-	app.Commands = []*cli.Command{
+	cliApp := cli.NewApp()
+	cliApp.Name = app.Name
+	cliApp.Version = app.Banner()
+	cliApp.Usage = "RPM utilities in Go"
+	cliApp.UsageText = fmt.Sprintf("%s <cmd> <options>", app.Name)
+	cliApp.Commands = []cli.Command{
 		{
 			Name:   "generate-spec",
 			Usage:  "Generate the SPEC file",
@@ -38,8 +46,8 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "file, f",
-					Value: "rpm_config.json",
-					Usage: "Path to the rpm_config.json file",
+					Value: "config.json",
+					Usage: "Path to the config.json file",
 				},
 				&cli.StringFlag{
 					Name:  "arch, a",
@@ -80,8 +88,8 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "file, f",
-					Value: "rpm_config.json",
-					Usage: "Path to the rpm_config.json file",
+					Value: "config.json",
+					Usage: "Path to the config.json file",
 				},
 				&cli.StringFlag{
 					Name:  "build-area, b",
@@ -132,58 +140,17 @@ func main() {
 			Flags: []cli.Flag{
 				&cli.StringFlag{
 					Name:  "file, f",
-					Value: "rpm_config.json",
-					Usage: "Path to the rpm_config.json file",
+					Value: "config.json",
+					Usage: "Path to the config.json file",
 				},
 			},
 		},
 	}
 
-	err := app.Run(os.Args)
+	err := cliApp.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
-}
-
-// GetAppName returns application name
-func GetAppName() string {
-	return appName
-}
-
-// ShortVersion returns short version information
-func GetShortVersion() string {
-	var sb strings.Builder
-	sb.WriteString(appName)
-	if appVersion != "" {
-		sb.WriteString("-" + appVersion)
-	}
-	sb.WriteString(fmt.Sprintf(", %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH))
-	sb.WriteString("\n")
-	return sb.String()
-}
-
-// GetVersion returns version information
-func GetVersion() string {
-	var sb strings.Builder
-	sb.WriteString(appName)
-	if appVersion != "" {
-		sb.WriteString("-" + appVersion)
-	}
-	sb.WriteString(fmt.Sprintf(", %s %s/%s", runtime.Version(), runtime.GOOS, runtime.GOARCH))
-	if gitCommit != "" {
-		sb.WriteString(", commit: " + gitCommit)
-	}
-	if gitBranch != "" {
-		sb.WriteString(", branch: " + gitBranch)
-	}
-	if buildDate != "" {
-		sb.WriteString(", build on " + buildDate)
-		if buildUser != "" {
-			sb.WriteString(" by " + buildUser)
-		}
-	}
-	sb.WriteString("\n")
-	return sb.String()
 }
 
 func generateSpec(c *cli.Context) error {
@@ -200,7 +167,7 @@ func generateSpec(c *cli.Context) error {
 	}
 
 	output := c.String("output")
-	rpmJSON := rpmbuilder.Package{}
+	rpmJSON := gorpm.Package{}
 
 	if err := rpmJSON.Load(cliInput["file"]); err != nil {
 		return cli.NewExitError(err.Error(), 1)
@@ -243,7 +210,7 @@ func generatePkg(c *cli.Context) error {
 		return cli.NewExitError("--output,-o argument is required", 1)
 	}
 
-	rpmJSON := rpmbuilder.Package{}
+	rpmJSON := gorpm.Package{}
 
 	if err = rpmJSON.Load(cliInput["file"]); err != nil {
 		return cli.NewExitError(err.Error(), 1)
@@ -275,7 +242,7 @@ func generatePkg(c *cli.Context) error {
 func testPkg(c *cli.Context) error {
 	file := c.String("file")
 
-	rpmJSON := rpmbuilder.Package{}
+	rpmJSON := gorpm.Package{}
 
 	if err := rpmJSON.Load(file); err != nil {
 		return cli.NewExitError(err.Error(), 1)
