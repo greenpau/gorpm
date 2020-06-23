@@ -35,7 +35,7 @@ func init() {
 func main() {
 	cliApp := cli.NewApp()
 	cliApp.Name = app.Name
-	cliApp.Version = app.Banner()
+	cliApp.Version = app.Version
 	cliApp.Usage = "RPM utilities in Go"
 	cliApp.UsageText = fmt.Sprintf("%s <cmd> <options>", app.Name)
 	cliApp.Commands = []cli.Command{
