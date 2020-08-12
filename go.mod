@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/Masterminds/semver v1.5.0
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
-	github.com/greenpau/versioned v1.0.18
+	github.com/greenpau/versioned v1.0.23
 	github.com/mattn/go-zglob v0.0.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.6.0

@@ -32,13 +32,12 @@ build:
 
 linter:
 	@golint pkg/$(CORE_PKG)/*.go
-	@golint cmd/client/*.go
+	@#golint cmd/client/*.go
 	@echo "PASS: golint"
 
 test: covdir linter
-	@go test $(VERBOSE) -coverprofile=.coverage/coverage.out ./pkg/$(CORE_PKG)/*.go
-	@bin/$(BINARY) -log.level debug -inventory ./assets/inventory/hosts \
-		-vault ./assets/inventory/vault.yml -vault.key.file ./assets/inventory/vault.key
+	@#go test $(VERBOSE) -coverprofile=.coverage/coverage.out ./pkg/$(CORE_PKG)/*.go
+	@bin/$(BINARY) --version
 
 ctest: covdir linter
 	@richgo version || go get -u github.com/kyoh86/richgo
@@ -80,7 +79,9 @@ dep:
 
 release:
 	@echo "Making release"
-	@if [ $(GIT_BRANCH) != "master" ]; then echo "cannot release to non-master branch $(GIT_BRANCH)" && false; fi
+	@go mod tidy
+	@go mod verify
+	@if [ $(GIT_BRANCH) != "main" ]; then echo "cannot release to non-main branch $(GIT_BRANCH)" && false; fi
 	@git diff-index --quiet HEAD -- || ( echo "git directory is dirty, commit changes first" && false )
 	@versioned -patch
 	@echo "Patched version"

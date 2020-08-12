@@ -4,12 +4,21 @@ Build RPM Packages with Go.
 
 ***Note***: This library was forked from [mh-cbon/go-bin-rpm](https://github.com/mh-cbon/go-bin-rpm).
 
-## Why?
+<!-- begin-markdown-toc -->
+## Table of Contents
+
+* [Purpose](#purpose)
+* [Packagin Examples](#packagin-examples)
+* [Getting Started](#getting-started)
+
+<!-- end-markdown-toc -->
+
+## Purpose
 
 * Generate RPM SPEC file
 * Generate RPM package
 
-## Examples
+## Packagin Examples
 
 The `assets/projects` contains real-life examples of packaging:
 

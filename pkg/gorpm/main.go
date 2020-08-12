@@ -54,6 +54,7 @@ type Package struct {
 	AutoReqProv       string            `json:"auto-req-prov,omitempty"`
 }
 
+// EnvVar represents an environment variable.
 type EnvVar struct {
 	Name  string `json:"name,omitempty"`
 	Value string `json:"value,omitempty"`
@@ -218,7 +219,7 @@ func (p *Package) Normalize(params map[string]string) error {
 		log.Infof("Added env File=%q\n", sc)
 		p.Files = append(p.Files, sc)
 	}
-	log.Infof("p.Envs=%q\n", p.Envs)
+	log.Infof("p.Envs=%v\n", p.Envs)
 	log.Infof("p.Requires=%s\n", p.Requires)
 	log.Infof("p.BuildRequires=%s\n", p.BuildRequires)
 	log.Infof("p.AutoReqProv=%s\n", p.AutoReqProv)
