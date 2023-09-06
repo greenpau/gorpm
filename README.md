@@ -1,5 +1,7 @@
 # gorpm
 
+<a href="https://github.com/greenpau/gorpm/actions/" target="_blank"><img src="https://github.com/greenpau/gorpm/workflows/build/badge.svg?branch=main"></a>
+
 Build RPM Packages with Go.
 
 ***Note***: This library was forked from [mh-cbon/go-bin-rpm](https://github.com/mh-cbon/go-bin-rpm).
