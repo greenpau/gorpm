@@ -36,7 +36,7 @@ linter:
 	@echo "PASS: golint"
 
 test: covdir linter
-	@#go test $(VERBOSE) -coverprofile=.coverage/coverage.out ./pkg/$(CORE_PKG)/*.go
+	@go test $(VERBOSE) -coverprofile=.coverage/coverage.out ./pkg/$(CORE_PKG)/*.go
 	@bin/$(BINARY) --version
 
 ctest: covdir linter
@@ -72,10 +72,9 @@ install:
 
 dep:
 	@echo "Making dependencies check ..."
-	@go get -u golang.org/x/lint/golint
-	@go get -u golang.org/x/tools/cmd/godoc
-	@go get -u github.com/kyoh86/richgo
-	@go get -u github.com/caddyserver/xcaddy/cmd/xcaddy
+	@go install golang.org/x/lint/golint@latest
+	@go install github.com/kyoh86/richgo@latest
+	@go install github.com/greenpau/versioned/cmd/versioned@latest
 
 release:
 	@echo "Making release"
